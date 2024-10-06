@@ -1,0 +1,105 @@
+---
+import Layout from '@/layouts/Layout.astro'
+---
+
+<Layout title="SICORE">
+    <main>
+        <form>
+            <label for="sicore">
+                Archivo .txt con percepciones correctas
+                <input type="file" name="sicore" accept=".txt" />
+            </label>
+            <label for="sicore-error">
+                Archivo .txt con percepciones incorrectas
+                <input type="file" name="sicore-error" accept=".txt" />
+            </label>
+
+            <button type="submit">Enviar archivos</button>
+        </form>
+    </main>
+</Layout>
+
+<script>
+    import { $ } from '@/lib/dom-selector'
+    import readFile from '@/utils/read-txt'
+    import sicore from '@/functions/sicore'
+
+    const $form = $('form') as HTMLFormElement
+
+    const handleSubmit = async (e: SubmitEvent) => {
+        e.preventDefault()
+        const formData = new FormData($form)
+
+        const sicoreTxt = formData.get('sicore') as File
+        const sicoreErrorTxt = formData.get('sicore-error') as File
+
+        if (!sicoreTxt || !sicoreErrorTxt) {
+            alert('Alguno de los archivos no se grabó.')
+            return
+        }
+
+        try {
+            // Leer el contenido de los archivos
+            const sicoreContent = await readFile(sicoreTxt)
+            const sicoreErrorContent = await readFile(sicoreErrorTxt)
+
+            const processedTxt = sicore(sicoreContent, sicoreErrorContent)
+
+            const blob = new Blob([processedTxt], { type: 'text/plain' })
+
+            const fileUrl = URL.createObjectURL(blob)
+
+            const link = document.createElement('a')
+            link.href = fileUrl
+            link.download = 'sicore_unificado.txt'
+            link.click()
+
+            URL.revokeObjectURL(fileUrl)
+        } catch (error) {
+            alert('Error al leer o procesar los archivos')
+        }
+    }
+
+    $form.addEventListener('submit', handleSubmit)
+</script>
+
+<style>
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    label {
+        display: flex;
+        flex-direction: column;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+
+    input[type='file'] {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    button {
+        padding: 0.75rem;
+        font-size: 1rem;
+        color: white;
+        background-color: #007bff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
